@@ -1,4 +1,5 @@
-; NES accuracy tests.
+; MibiEngineN - A small engine (not really, it's more a template) to create
+; NROM NES games in assembly.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;

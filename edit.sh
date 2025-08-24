@@ -35,22 +35,5 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-builddir=build
-
-name=MibiEngineN.nes
-srcdir=src
-
-mkdir -p $builddir
-
-objfiles=()
-
-for i in $(find $srcdir -mindepth 1 -type f -name "*.s"); do
-    obj=$builddir/${i#$srcdir*}.obj
-    echo "Assembling ${i} to ${obj}..."
-    mkdir -p $(dirname $obj)
-    ca65 $i -o $obj -W 1 -g
-    objfiles+=($obj)
-done
-
-#Linking
-ld65 ${objfiles[@]} -o $name -C nrom.cfg --dbgfile test.dbg
+nano $(find -type f ! -name "*.dbg" ! -path "./.git/*" ! -path "./build/*" \
+       -exec grep -Iq . {} \; -print | sort)

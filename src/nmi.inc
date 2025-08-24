@@ -1,4 +1,5 @@
-; NES accuracy tests.
+; MibiEngineN - A small engine (not really, it's more a template) to create
+; NROM NES games in assembly.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -31,6 +32,8 @@
 .ifndef nmi_inc
 nmi_inc = 0
 
+; Initialize all variables used by the NMI runtime
+; Clobbers A and X.
 .global   PPU_INIT
 
 

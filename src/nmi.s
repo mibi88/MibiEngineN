@@ -1,4 +1,5 @@
-; NES accuracy tests.
+; MibiEngineN - A small engine (not really, it's more a template) to create
+; NROM NES games in assembly.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -35,14 +36,14 @@
 
 .segment "ZEROPAGE"
 
-nam_cur:        .res 1 ; The cursor in the nametable buffer (initialized to $FF
-                       ; and decremented for each byte.
-nam_min:        .res 1 ; The minimum value for the cursor, which is reached
-                       ; when the maximum number of bytes are loaded into the
-                       ; buffer
-
 nam_x:          .res 1
 nam_y:          .res 1
+
+nam_coarse_x:   .res 1
+nam_coarse_y:   .res 1
+
+scroll:         .res 1
+direction:      .res 1
 
 ppu_ctrl:       .res 1
 ppu_mask:       .res 1
@@ -57,16 +58,17 @@ nmi:            .res 1
 
 .segment "BSS"
 
+stripe_h:       .res 32 ; Horizontal stripe
+stripe_v:       .res 30 ; Vertical stripe
+
+status:         .res 32 ; Status bar
+
 nam_buffer:     .res 256
 pal_buffer:     .res $20
 
 .segment "TEXT"
 
 .proc PPU_INIT
-        ; TODO: Tweak this limit once the NMI handler is finished
-        LDA #$60
-        STA nam_min
-
         LDX #$00
         STX nam_x
         STX nam_y
@@ -78,9 +80,6 @@ pal_buffer:     .res $20
         STX nmi
 
         STX pal_update
-
-        DEX
-        STX nam_cur
 
         LDA #$20
         STA ppu_addr+1
@@ -135,39 +134,25 @@ pal_buffer:     .res $20
 
     PAL_LOAD_SKIP:
 
-        ; NAMETABLE LOADING CODE
+        ; Handle 4 way scrolling with status bar
 
-        LDX nam_cur
-        CPX #$FF
+        LDA scroll
         BEQ NAM_LOAD_SKIP
 
         INX
 
+.if 0
+        ; TODO: Allow copying data quickly when changing screen
         ; Load the target address
         LDA ppu_addr+1
         STA PPUADDR
         LDA ppu_addr
         STA PPUADDR
+.endif
 
         ; Copy the nametable data over to the PPU
 
-    NAM_LOAD_LOOP:
-        LDA nam_buffer, X
-        STA PPUDATA
-        INX
-        BNE NAM_LOAD_LOOP
-
-        LDA nam_cur
-        EOR #$FF
-        CLC
-        ADC ppu_addr
-        STA ppu_addr
-        LDA ppu_addr+1
-        ADC #$00
-        STA ppu_addr+1
-
-        LDA #$FF
-        STA nam_cur
+        ; TODO
 
     NAM_LOAD_SKIP:
 

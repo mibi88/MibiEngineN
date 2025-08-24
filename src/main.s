@@ -1,4 +1,5 @@
-; NES accuracy tests.
+; MibiEngineN - A small engine (not really, it's more a template) to create
+; NROM NES games in assembly.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -37,9 +38,7 @@
 .segment "TEXT"
 
 .include "nmi.inc"
-.include "shell.inc"
 .include "std.inc"
-.include "imm_test.inc"
 
 .proc MAIN
         LDA #$80
@@ -52,13 +51,6 @@
         STA ppu_ctrl
         LDA #%00011110
         STA ppu_mask
-
-        JSR CLEAR
-
-        JSR IMM_TEST_INIT
-        JSR IMM_TEST_DRAW
-        JSR IMM_TEST_RUN
-        JSR IMM_TEST_MAINLOOP
 
     LOOP:
         ;

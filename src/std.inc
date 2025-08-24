@@ -1,4 +1,5 @@
-; NES accuracy tests.
+; MibiEngineN - A small engine (not really, it's more a template) to create
+; NROM NES games in assembly.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -32,17 +33,17 @@
 std_inc = 0
 
 ; strlen for strings made by up to 255 bytes.
-; Pass the lower byte in A and the upper byte of the pointer in X.
-; Uses all the registers.
 ; Return value in Y.
+; Clobbers A and X.
 .global STRLEN
 
 ; Convert the number in a to a NUL terminated string
 ; Pass the ptr in XY (upper byte in X and lower byte in Y).
+; Clobbers A, X and Y.
 .global HTOA
 
 ; Get the controller 1 output in ctrl1.
-; Uses A
+; Clobbers A
 .global READCTRL1
 
 ; A pointer used by various subroutines.

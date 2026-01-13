@@ -34,18 +34,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-if [ $# -lt 1 ]; then
-    echo "USAGE: $0 [NAMETABLE]"
-    exit 1
-fi
-
 builddir=build
 datadir=data
 
-name=christmas.nes
-dbgfile=christmas.dbg
+name=rom.nes
+dbgfile=rom.dbg
 
-srcdir=src
+srcdirs="src lib"
 assetdir=assets
 
 rootdir=$(dirname $0)
@@ -69,37 +64,40 @@ mkdir -p $datadir
 
 echo "-- Converting the nametable..."
 
-i=$1
+for i in $(find $assetdir -type f -name "*.nam"); do
+    nam=$datadir/${i#$assetdir*}
+    echo "-- Converting ${i} to ${nam}.rle..."
+    mkdir -p $(dirname $nam)
+    utils/rle/rle $i $nam.rle
+    if [ $? -ne 0 ]; then
+        echo "-- Build failed with exit code $?!"
+        echo "-- Exiting $rootdir..."
+        cd $orgdir
+        exit $?
+    fi
 
-nam=$datadir/title.nam.rle
-echo "-- Converting ${i} to ${nam}..."
-mkdir -p $(dirname $nam)
-utils/rle/rle $i $nam
-if [ $? -ne 0 ]; then
-    echo "-- Build failed with exit code $?!"
-    echo "-- Exiting $rootdir..."
-    cd $orgdir
-    exit $?
-fi
+    echo "-- Generating a mask of ${i} to ${nam}.bin..."
+    utils/tilemap_mask/tilemap_mask $i $nam.bin
+done
 
-echo "-- Generating a mask of the tilemap..."
-utils/tilemap_mask/tilemap_mask $i $datadir/title.nam.bin
+for i in $(find $assetdir -type f -name "*.chr"); do
+    chr=$datadir/${i#$assetdir*}
+    echo "-- Compressing the tiles to ${chr}.rle..."
+    utils/rle/rle $i $chr.rle
 
-echo "-- Converting the tiles..."
-utils/rle/rle src/chr.chr $datadir/chr.chr.rle
-
-echo "-- Calculating the usage of each tile..."
-utils/tile_usage/tile_usage src/chr.chr $datadir/chr.chr.bin
+    echo "-- Writing the usage of each tile in ${i} down in ${chr}.bin..."
+    utils/tile_usage/tile_usage $i $chr.bin
+done
 
 echo "-- Assembling the source files..."
 
 objfiles=()
 
-for i in $(find $srcdir -mindepth 1 -type f -name "*.s"); do
-    obj=$builddir/${i#$srcdir*}.obj
+for i in $(find $srcdirs -mindepth 1 -type f -name "*.s"); do
+    obj=$builddir/${i#$srcdirs*}.obj
     echo "-- Assembling ${i} to ${obj}..."
     mkdir -p $(dirname $obj)
-    ca65 $i -o $obj -W 1 -g
+    ca65 $i -o $obj -W 1 -g -I lib
     if [ $? -ne 0 ]; then
         echo "-- Build failed with exit code $?!"
         echo "-- Exiting $rootdir..."

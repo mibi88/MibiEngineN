@@ -1,7 +1,6 @@
 #!/bin/sh
 
-# MibiEngineN - A small engine (not really, it's more a template) to create
-# NROM NES games in assembly.
+# Mushroom farming simulation game.
 #
 # by Mibi88
 #
@@ -35,22 +34,92 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-builddir=build
+if [ $# -lt 1 ]; then
+    echo "USAGE: $0 [NAMETABLE]"
+    exit 1
+fi
 
-name=MibiEngineN.nes
+builddir=build
+datadir=data
+
+name=christmas.nes
+dbgfile=christmas.dbg
+
 srcdir=src
+assetdir=assets
+
+rootdir=$(dirname $0)
+orgdir=$(pwd)
+echo "-- Entering $rootdir..."
+cd $rootdir
+
+echo "-- Building the tools..."
+utils/rle/build.sh
+utils/tilemap_mask/build.sh
+utils/tile_usage/build.sh
+if [ $? -ne 0 ]; then
+    echo "-- Build failed with exit code $?!"
+    echo "-- Exiting $rootdir..."
+    cd $orgdir
+    exit $?
+fi
 
 mkdir -p $builddir
+mkdir -p $datadir
+
+echo "-- Converting the nametable..."
+
+i=$1
+
+nam=$datadir/title.nam.rle
+echo "-- Converting ${i} to ${nam}..."
+mkdir -p $(dirname $nam)
+utils/rle/rle $i $nam
+if [ $? -ne 0 ]; then
+    echo "-- Build failed with exit code $?!"
+    echo "-- Exiting $rootdir..."
+    cd $orgdir
+    exit $?
+fi
+
+echo "-- Generating a mask of the tilemap..."
+utils/tilemap_mask/tilemap_mask $i $datadir/title.nam.bin
+
+echo "-- Converting the tiles..."
+utils/rle/rle src/chr.chr $datadir/chr.chr.rle
+
+echo "-- Calculating the usage of each tile..."
+utils/tile_usage/tile_usage src/chr.chr $datadir/chr.chr.bin
+
+echo "-- Assembling the source files..."
 
 objfiles=()
 
 for i in $(find $srcdir -mindepth 1 -type f -name "*.s"); do
     obj=$builddir/${i#$srcdir*}.obj
-    echo "Assembling ${i} to ${obj}..."
+    echo "-- Assembling ${i} to ${obj}..."
     mkdir -p $(dirname $obj)
     ca65 $i -o $obj -W 1 -g
+    if [ $? -ne 0 ]; then
+        echo "-- Build failed with exit code $?!"
+        echo "-- Exiting $rootdir..."
+        cd $orgdir
+        exit $?
+    fi
     objfiles+=($obj)
 done
 
-#Linking
-ld65 ${objfiles[@]} -o $name -C nrom.cfg --dbgfile test.dbg
+# Linking
+echo "-- Linking $name..."
+ld65 ${objfiles[@]} -o $name -C nrom.cfg --dbgfile $dbgfile
+
+if [ $? -ne 0 ]; then
+    echo "-- Build failed with exit code $?!"
+    echo "-- Exiting $rootdir..."
+    cd $orgdir
+    exit $?
+fi
+
+echo "-- Exiting $rootdir..."
+cd $orgdir
+echo "-- Build succeeded!"

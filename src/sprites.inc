@@ -28,96 +28,11 @@
 ; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ; POSSIBILITY OF SUCH DAMAGE.
 
-.include "std.inc"
+.ifndef sprites_inc
+sprites_inc = 0
 
-.segment "ZEROPAGE"
+.global INIT_SPRITES
+.global MOVE_SPRITES
+.global SPRITE_COLLISION
 
-ptr:            .res 2
-
-seed:           .res 1
-randtmp:        .res 1
-
-.segment "TEXT"
-
-.proc STRLEN
-        STA ptr
-        STX ptr+1
-
-        LDY #$00
-
-    LOOP:
-        INY
-        LDA (ptr), Y
-        BNE LOOP
-
-    DONE:
-        RTS
-.endproc
-
-.proc HTOA
-        STY ptr
-        STX ptr+1
-
-        LDY #$00
-
-        TAX
-
-        ; Get the high nibble
-        LSR
-        LSR
-        LSR
-        LSR
-
-        CLC
-        ADC #$30
-
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA2
-
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA2:
-
-        STA (ptr), Y
-        INY
-
-        ; Get the low nibble
-        TXA
-
-        AND #$0F
-
-        CLC
-        ADC #$30
-
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA
-
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA:
-
-        STA (ptr), Y
-        INY
-
-        ; Make the string NUL-terminated.
-        LDA #$00
-        STA (ptr), Y
-
-        RTS
-.endproc
-
-.proc RAND
-        STX randtmp
-        LDX seed
-        LDA RAND_DATA, X
-        INX
-        STX seed
-        LDX randtmp
-
-        RTS
-.endproc
-
-RAND_DATA:
-    .incbin "rand.bin"
+.endif

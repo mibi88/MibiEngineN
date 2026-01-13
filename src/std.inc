@@ -1,5 +1,4 @@
-; MibiEngineN - A small engine (not really, it's more a template) to create
-; NROM NES games in assembly.
+; Small demo for christmas 2025.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -33,23 +32,30 @@
 std_inc = 0
 
 ; strlen for strings made by up to 255 bytes.
-; Return value in Y.
+; Pass the lower byte in A and the upper byte of the pointer in X.
+;
 ; Clobbers A and X.
+;
+; Return value in Y.
 .global STRLEN
 
-; Convert the number in a to a NUL terminated string
+; Convert the number in A to a NUL terminated string
 ; Pass the ptr in XY (upper byte in X and lower byte in Y).
-; Clobbers A, X and Y.
+;
+; Clobbers A, X, Y.
 .global HTOA
-
-; Get the controller 1 output in ctrl1.
-; Clobbers A
-.global READCTRL1
 
 ; A pointer used by various subroutines.
 .globalzp ptr
 
-; The controller 1 input read by READCTRL1
-.globalzp ctrl1
+; The PRNG seed.
+.globalzp seed
+
+; Generate a random number from an 8-bit seed. It leaves X and Y intact.
+;
+; Currently it uses a 256 byte buffer of random numbers.
+;
+; Return value in A.
+.global RAND
 
 .endif

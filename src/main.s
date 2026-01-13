@@ -1,5 +1,4 @@
-; MibiEngineN - A small engine (not really, it's more a template) to create
-; NROM NES games in assembly.
+; Small demo for christmas 2025.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -33,55 +32,100 @@
 
 .segment "ZEROPAGE"
 
+countdown:      .res 1
+
 .segment "BSS"
 
 .segment "TEXT"
 
 .include "nmi.inc"
 .include "std.inc"
+.include "nes.inc"
+.include "ppu.inc"
+.include "tile_update.inc"
+.include "sprites.inc"
+.include "map_data.inc"
 
 .proc MAIN
         LDA #$80
         STA $2000
 
         JSR PPU_INIT
-        JSR LOAD_PALETTE
 
         LDA #%10000000
         STA ppu_ctrl
-        LDA #%00011110
+        STA PPUCTRL
+        LDA #%00000000
         STA ppu_mask
 
+        LDX #>PALETTE
+        LDA #<PALETTE
+        JSR LOAD_PALETTE
+
+        LDX #$20
+        LDA #$00
+        JSR SET_PPU_ADDR
+
+        LDX #>TITLE_NAM
+        LDA #<TITLE_NAM
+        JSR LOAD_RLE
+
+        LDX #$00
+        LDA #$00
+        JSR SET_PPU_ADDR
+
+        LDX #>TILES
+        LDA #<TILES
+        JSR LOAD_RLE
+
+        LDA #%00011110
+        STA ppu_mask
+        LDA #%10001000
+        STA ppu_ctrl
+
+        JSR INIT_SPRITES
+        JSR LOAD_MAP_USAGE
+        JSR LOAD_TILE_USAGE
+
     LOOP:
-        ;
+        LDA nmi
+        BEQ LOOP
+        LDA #$00
+        STA nmi
+
+        LDX countdown
+        CPX #$08
+        BNE SKIP
+
+        JSR MOVE_SPRITES
+        LDX #$00
+        JMP UPDATE
+
+    SKIP:
+        INX
+    UPDATE:
+        STX countdown
+        JSR UPDATE_SPRITES
+        JSR SPRITE_COLLISION
+
+        JSR FIND_EMPTY
+
         JMP LOOP
 .endproc
 
-.proc LOAD_PALETTE
-        LDX #$00
-    LOOP:
-        LDA PALETTE, X
-        STA pal_buffer, X
-        INX
-        CPX #$20
-        BNE LOOP
-
-        LDA #01
-        STA pal_update
-
-        RTS
-.endproc
-
 PALETTE:
-    .byte $1D, $00, $10, $30
-    .byte $1D, $00, $10, $30
-    .byte $1D, $00, $10, $30
-    .byte $1D, $00, $10, $30
+    .byte $03, $30, $16, $36
+    .byte $03, $30, $16, $36
+    .byte $03, $30, $16, $36
+    .byte $03, $30, $16, $36
 
-    .byte $1D, $00, $10, $30
-    .byte $1D, $00, $10, $30
-    .byte $1D, $00, $10, $30
-    .byte $1D, $00, $10, $30
+    .byte $03, $30, $16, $36
+    .byte $03, $30, $16, $36
+    .byte $03, $30, $16, $36
+    .byte $03, $30, $16, $36
 
-STR:
-    .asciiz "Hello, World!"
+TITLE_NAM:
+    .incbin "data/title.nam.rle"
+
+TILES:
+    .incbin "data/chr.chr.rle"

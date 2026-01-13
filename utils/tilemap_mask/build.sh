@@ -34,5 +34,45 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-nano $(find -type f ! -name "*.dbg" ! -path "./.git/*" ! -path "./build/*" \
-       -exec grep -Iq . {} \; -print | sort)
+builddir=build
+
+name=tilemap_mask
+srcdir=src
+
+rootdir=$(dirname $0)
+orgdir=$(pwd)
+echo "-- Entering $rootdir..."
+cd $rootdir
+
+mkdir -p $builddir
+
+objfiles=()
+
+for i in $(find $srcdir -mindepth 1 -type f -name "*.c"); do
+    obj=$builddir/${i#$srcdir*}.o
+    echo "-- Compiling ${i} to ${obj}..."
+    mkdir -p $(dirname $obj)
+    cc -c $i -o $obj -ansi -Isrc
+    if [ $? -ne 0 ]; then
+        echo "-- Build failed with exit code $?!"
+        echo "-- Exiting $rootdir..."
+        cd $orgdir
+        exit $?
+    fi
+    objfiles+=($obj)
+done
+
+# Linking
+echo "-- Linking $name..."
+cc ${objfiles[@]} -o $name
+
+if [ $? -ne 0 ]; then
+    echo "-- Build failed with exit code $?!"
+    echo "-- Exiting $rootdir..."
+    cd $orgdir
+    exit $?
+fi
+
+echo "-- Exiting $rootdir..."
+cd $orgdir
+echo "-- Build succeeded!"

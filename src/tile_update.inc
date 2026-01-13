@@ -28,96 +28,25 @@
 ; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ; POSSIBILITY OF SUCH DAMAGE.
 
-.include "std.inc"
+.ifndef tile_update_inc
+tile_update_inc = 0
 
-.segment "ZEROPAGE"
+UPDATE_STACK_SZ = 4
 
-ptr:            .res 2
+; To pull from the stack decrease spr_stack_idx first, then read, and to push
+; to it, write the data with spr_stack_idx as an index, and increment it
+; afterwards.
 
-seed:           .res 1
-randtmp:        .res 1
+.globalzp   spr_stack_idx
 
-.segment "TEXT"
+.global     sprite_tile_hi
+.global     sprite_tile_lo
+.global     sprite_tgt_hi
+.global     sprite_tgt_lo
+.global     sprite_fine_x
+.global     sprite_fine_y
+.global     sprite_idx
 
-.proc STRLEN
-        STA ptr
-        STX ptr+1
+.global     UPDATE_TILES
 
-        LDY #$00
-
-    LOOP:
-        INY
-        LDA (ptr), Y
-        BNE LOOP
-
-    DONE:
-        RTS
-.endproc
-
-.proc HTOA
-        STY ptr
-        STX ptr+1
-
-        LDY #$00
-
-        TAX
-
-        ; Get the high nibble
-        LSR
-        LSR
-        LSR
-        LSR
-
-        CLC
-        ADC #$30
-
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA2
-
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA2:
-
-        STA (ptr), Y
-        INY
-
-        ; Get the low nibble
-        TXA
-
-        AND #$0F
-
-        CLC
-        ADC #$30
-
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA
-
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA:
-
-        STA (ptr), Y
-        INY
-
-        ; Make the string NUL-terminated.
-        LDA #$00
-        STA (ptr), Y
-
-        RTS
-.endproc
-
-.proc RAND
-        STX randtmp
-        LDX seed
-        LDA RAND_DATA, X
-        INX
-        STX seed
-        LDX randtmp
-
-        RTS
-.endproc
-
-RAND_DATA:
-    .incbin "rand.bin"
+.endif

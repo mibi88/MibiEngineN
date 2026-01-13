@@ -1,5 +1,4 @@
-; MibiEngineN - A small engine (not really, it's more a template) to create
-; NROM NES games in assembly.
+; Small demo for christmas 2025.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -32,15 +31,15 @@
 .ifndef nmi_inc
 nmi_inc = 0
 
-; Initialize all variables used by the NMI runtime
-; Clobbers A and X.
+; Initialize the NMI-routine related code
+;
+; Clobbers A, X
 .global   PPU_INIT
-
 
 .global   nam_buffer
 .global   pal_buffer
 
-.globalzp nam_min
+.globalzp nam_max
 .globalzp nam_cur
 
 .globalzp nam_x
@@ -52,5 +51,7 @@ nmi_inc = 0
 .globalzp ppu_addr
 
 .globalzp pal_update
+
+.globalzp nmi
 
 .endif

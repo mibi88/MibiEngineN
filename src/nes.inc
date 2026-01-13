@@ -28,96 +28,46 @@
 ; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ; POSSIBILITY OF SUCH DAMAGE.
 
-.include "std.inc"
+.ifndef gfx_inc
+gfx_inc = 0
 
-.segment "ZEROPAGE"
+; Get the controller 1 output in ctrl1.
+;
+; Clobbers A
+.global READ_CTRL1
 
-ptr:            .res 2
+; Get the controller 2 output in ctrl2.
+;
+; Clobbers A
+.global READ_CTRL2
 
-seed:           .res 1
-randtmp:        .res 1
+; Load a palette from a pointer in AX (lower byte in A)
+;
+; Clobbers A, Y
+.global LOAD_PALETTE
 
-.segment "TEXT"
+; Set the PPU address.
+;
+; Clobbers Y
+.global SET_PPU_ADDR
 
-.proc STRLEN
-        STA ptr
-        STX ptr+1
+; Load a RLE compressed nametable, which is zero terminated.
+;
+; Clobbers A, X, Y
+.global LOAD_RLE
 
-        LDY #$00
+; The controller 1 input read by READ_CTRL1
+.globalzp ctrl1
+; The controller 2 input read by READ_CTRL2
+.globalzp ctrl2
 
-    LOOP:
-        INY
-        LDA (ptr), Y
-        BNE LOOP
+; The sprite data.
+.global sprites
 
-    DONE:
-        RTS
-.endproc
+; Loads the sprite data to $0200, from where it is then sent to the PPU.
+;
+; Clobbers A, X and Y.
+.global UPDATE_SPRITES
 
-.proc HTOA
-        STY ptr
-        STX ptr+1
 
-        LDY #$00
-
-        TAX
-
-        ; Get the high nibble
-        LSR
-        LSR
-        LSR
-        LSR
-
-        CLC
-        ADC #$30
-
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA2
-
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA2:
-
-        STA (ptr), Y
-        INY
-
-        ; Get the low nibble
-        TXA
-
-        AND #$0F
-
-        CLC
-        ADC #$30
-
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA
-
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA:
-
-        STA (ptr), Y
-        INY
-
-        ; Make the string NUL-terminated.
-        LDA #$00
-        STA (ptr), Y
-
-        RTS
-.endproc
-
-.proc RAND
-        STX randtmp
-        LDX seed
-        LDA RAND_DATA, X
-        INX
-        STX seed
-        LDX randtmp
-
-        RTS
-.endproc
-
-RAND_DATA:
-    .incbin "rand.bin"
+.endif

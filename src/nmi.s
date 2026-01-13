@@ -1,5 +1,4 @@
-; MibiEngineN - A small engine (not really, it's more a template) to create
-; NROM NES games in assembly.
+; Small demo for christmas 2025.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -33,17 +32,16 @@
 
 .include "ppu.inc"
 .include "nmi.inc"
+.include "tile_update.inc"
 
 .segment "ZEROPAGE"
 
+nam_cur:        .res 1 ; The cursor in the nametable buffer (initialized to $FF
+                       ; and decremented for each byte.
+nam_max:        .res 1 ; The maximum number of bytes that can be loaded at once
+
 nam_x:          .res 1
 nam_y:          .res 1
-
-nam_coarse_x:   .res 1
-nam_coarse_y:   .res 1
-
-scroll:         .res 1
-direction:      .res 1
 
 ppu_ctrl:       .res 1
 ppu_mask:       .res 1
@@ -58,17 +56,16 @@ nmi:            .res 1
 
 .segment "BSS"
 
-stripe_h:       .res 32 ; Horizontal stripe
-stripe_v:       .res 30 ; Vertical stripe
-
-status:         .res 32 ; Status bar
-
 nam_buffer:     .res 256
 pal_buffer:     .res $20
 
 .segment "TEXT"
 
 .proc PPU_INIT
+        ; TODO: Tweak this limit once the NMI handler is finished
+        LDA #$40
+        STA nam_max
+
         LDX #$00
         STX nam_x
         STX nam_y
@@ -80,6 +77,9 @@ pal_buffer:     .res $20
         STX nmi
 
         STX pal_update
+
+        DEX
+        STX nam_cur
 
         LDA #$20
         STA ppu_addr+1
@@ -123,39 +123,58 @@ pal_buffer:     .res $20
 
         ; Load the palette
 
-        LDX #$00
+        LDX #($100-$20)
 
     PAL_LOAD_LOOP:
-        LDA pal_buffer, X
+        LDA pal_buffer-($100-$20), X
         STA PPUDATA
         INX
-        CPX #$20
         BNE PAL_LOAD_LOOP
+
+        STX pal_update
 
     PAL_LOAD_SKIP:
 
-        ; Handle 4 way scrolling with status bar
+        ; NAMETABLE LOADING CODE
 
-        LDA scroll
+        LDX nam_cur
         BEQ NAM_LOAD_SKIP
 
-        INX
+        LDX #$00
 
-.if 0
-        ; TODO: Allow copying data quickly when changing screen
         ; Load the target address
         LDA ppu_addr+1
         STA PPUADDR
         LDA ppu_addr
         STA PPUADDR
-.endif
 
         ; Copy the nametable data over to the PPU
 
-        ; TODO
+    NAM_LOAD_LOOP:
+        LDA nam_buffer, X
+        STA PPUDATA
+        INX
+        CPX nam_cur
+        BNE NAM_LOAD_LOOP
 
+        LDA nam_cur
+        CLC
+        ADC ppu_addr
+        STA ppu_addr
+        LDA ppu_addr+1
+        ADC #$00
+        STA ppu_addr+1
+
+        LDA #$00
+        STA nam_cur
+        BEQ END ; Branch always taken.
+
+        ; Do not edit tiles if nametable data was already loaded, as it may
+        ; take too many cycles.
     NAM_LOAD_SKIP:
+        JSR UPDATE_TILES
 
+    END:
         ; Write to PPUCTRL and PPUMASK
 
         LDA ppu_ctrl

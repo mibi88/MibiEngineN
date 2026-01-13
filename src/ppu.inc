@@ -1,5 +1,4 @@
-; MibiEngineN - A small engine (not really, it's more a template) to create
-; NROM NES games in assembly.
+; Small demo for christmas 2025.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;

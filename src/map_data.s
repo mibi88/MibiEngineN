@@ -28,96 +28,82 @@
 ; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ; POSSIBILITY OF SUCH DAMAGE.
 
-.include "std.inc"
+.include "map_data.inc"
 
 .segment "ZEROPAGE"
 
-ptr:            .res 2
+empty_tiles:    .res 1
 
-seed:           .res 1
-randtmp:        .res 1
+.segment "BSS"
+
+tile_usage:     .res 256
+map_usage:      .res 32*30/8
+
+empty_tile_idx: .res TILE_STACK_SZ
 
 .segment "TEXT"
 
-.proc STRLEN
-        STA ptr
-        STX ptr+1
-
-        LDY #$00
+.proc LOAD_MAP_USAGE
+        LDX #$00
 
     LOOP:
-        INY
-        LDA (ptr), Y
+        LDA NAM_MASK, X
+        STA map_usage, X
+
+        INX
+        CPX 32*30/8
         BNE LOOP
 
-    DONE:
         RTS
 .endproc
 
-.proc HTOA
-        STY ptr
-        STX ptr+1
+.proc LOAD_TILE_USAGE
+        LDX #$FF
 
-        LDY #$00
+    LOOP:
+        LDA TILE_USAGE, X
+        STA tile_usage, X
 
-        TAX
+        DEX
+        BNE LOOP
 
-        ; Get the high nibble
-        LSR
-        LSR
-        LSR
-        LSR
+        ; Initialize empty_tiles.
+        LDA #TILE_STACK_SZ
+        STA empty_tiles
 
-        CLC
-        ADC #$30
+        RTS
+.endproc
 
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA2
+.proc FIND_EMPTY
+        ; NOTE: The first tile is skipped, as it is used in the original
+        ; nametable data for empty tiles.
 
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA2:
+        LDA empty_tiles
+        BEQ STACK_FULL
+        LDX #63
 
-        STA (ptr), Y
-        INY
+    LOOP:
+        LDA tile_usage, X
+        BNE SKIP
 
-        ; Get the low nibble
+        LDY empty_tiles
+        DEY
         TXA
+        STA empty_tile_idx+1, Y
+        STY empty_tiles
 
-        AND #$0F
+    SKIP:
+        DEX
+        BNE LOOP
 
-        CLC
-        ADC #$30
-
-        ; Check if it should be a letter
-        CMP #$3A
-        BCC NOT_ALPHA
-
-        ; Make it a letter
-        ADC #($41-$3A-1)
-    NOT_ALPHA:
-
-        STA (ptr), Y
-        INY
-
-        ; Make the string NUL-terminated.
-        LDA #$00
-        STA (ptr), Y
-
+    STACK_FULL:
         RTS
 .endproc
 
-.proc RAND
-        STX randtmp
-        LDX seed
-        LDA RAND_DATA, X
-        INX
-        STX seed
-        LDX randtmp
+NAM_MASK:
+    .incbin "data/title.nam.bin"
 
-        RTS
-.endproc
-
-RAND_DATA:
-    .incbin "rand.bin"
+TILE_USAGE:
+    ; Load only the data for the first page, as (obviously) only the first page
+    ; is used in the nametable, and we don't need this data for the sprites.
+    .incbin "data/chr.chr.bin", 0, $100

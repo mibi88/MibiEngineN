@@ -1,5 +1,4 @@
-; MibiEngineN - A small engine (not really, it's more a template) to create
-; NROM NES games in assembly.
+; Small demo for christmas 2025.
 ;
 ; Copyright (c) 2025 Mibi88.
 ;
@@ -29,18 +28,23 @@
 ; ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ; POSSIBILITY OF SUCH DAMAGE.
 
+.include "region.inc"
+.include "ppu.inc"
+
 .segment "HEADER"
 
 .byte "NES"
 .byte $1a
 .byte $01 ; PRG ROM
-.byte $01 ; CHR ROM
+.byte $00 ; CHR ROM
 .byte %00000000 ; mapper + mirorring
 .byte $00
 .byte $00
-.byte %00000001
-.byte $00
-.byte $00, $01, $00, $00, $00
+.byte %00000001 ; TV system: PAL
+.byte %00110001 ; Bus conflicts, no PRG ram, compatible with both PAL and NTSC
+.byte $07 ; CHR-RAM shift count in the lower nibble, i.e.,
+          ; 64<<shift_count bytes.
+.byte $01, $00, $00, $00
 
 .segment "STARTUP"
 
@@ -97,13 +101,31 @@
         BIT $2002
         BPL WAIT_VBLANK2
 
-        TXA
+        ; Checking TV System as described in
+        ; https://forums.nesdev.org/viewtopic.php?p=163258#p163258
+        LDX #$00
+        LDY #$00
+    XLOOP:
+        INX
+        BNE SKIPY ; Branch if X != 0
+        INY
+    SKIPY:
+        ; Check for vblank
+        BIT PPUSTATUS ; Waiting for VBLANK.
+        BPL XLOOP
+        ; Adapt speed to the region
+        CPY #$09
+        BEQ IS_NTSC
+        CPY #$13
+        BEQ IS_NTSC
+        ; PAL
+        LDA #PAL
+    IS_NTSC:
+        ; NTSC
+        LDA #NTSC
 
         JMP MAIN
 .endproc
-
-.segment "CHARS"
-.incbin "chr.chr"
 
 .segment "VECTORS"
 .word NMI

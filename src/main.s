@@ -32,8 +32,6 @@
 
 .segment "ZEROPAGE"
 
-countdown:      .res 1
-
 .segment "BSS"
 
 .segment "TEXT"
@@ -42,9 +40,6 @@ countdown:      .res 1
 .include "std.inc"
 .include "nes.inc"
 .include "ppu.inc"
-.include "tile_update.inc"
-.include "sprites.inc"
-.include "map_data.inc"
 
 .proc MAIN
         LDA #$80
@@ -83,32 +78,13 @@ countdown:      .res 1
         LDA #%10001000
         STA ppu_ctrl
 
-        JSR INIT_SPRITES
-        JSR LOAD_MAP_USAGE
-        JSR LOAD_TILE_USAGE
-
     LOOP:
         LDA nmi
         BEQ LOOP
         LDA #$00
         STA nmi
 
-        LDX countdown
-        CPX #$08
-        BNE SKIP
-
-        JSR MOVE_SPRITES
-        LDX #$00
-        JMP UPDATE
-
-    SKIP:
-        INX
-    UPDATE:
-        STX countdown
         JSR UPDATE_SPRITES
-        JSR SPRITE_COLLISION
-
-        JSR FIND_EMPTY
 
         JMP LOOP
 .endproc

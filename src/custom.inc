@@ -32,8 +32,7 @@
 custom_inc = 0
 
 .macro nmi_extra
-    .include "../src/tile_update.inc"
-    JSR UPDATE_TILES
+    ; Nothing to do here.
 .endmacro
 
 .endif

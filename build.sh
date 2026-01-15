@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Mushroom farming simulation game.
+# MibiEngineN -- A small template to code NES games.
 #
 # by Mibi88
 #

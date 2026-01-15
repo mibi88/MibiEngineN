@@ -1,4 +1,4 @@
-/* Small demo for christmas 2025.
+/* MibiEngineN -- A small template to code NES games.
  *
  * by Mibi88
  *
